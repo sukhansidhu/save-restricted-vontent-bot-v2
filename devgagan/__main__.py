@@ -1,4 +1,4 @@
-f# ---------------------------------------------------
+# ---------------------------------------------------
 # File Name: __main__.py
 # Description: A Pyrogram bot for downloading files from Telegram channels or groups 
 #              and uploading them back to Telegram.
