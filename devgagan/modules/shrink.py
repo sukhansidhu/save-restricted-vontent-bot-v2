@@ -69,8 +69,8 @@ async def token_handler(client, message):
     join = await subscribe(client, message)
     if join == 1:
         return
-    chat_id = "-1002233338225"
-    msg = await app.get_messages(chat_id, 441)
+    chat_id = "allbotsupdates1"
+    msg = await app.get_messages(chat_id, 4)
     user_id = message.chat.id
     if len(message.command) <= 1:
         image_url = "https://files.catbox.moe/w10e8w.jpg"
