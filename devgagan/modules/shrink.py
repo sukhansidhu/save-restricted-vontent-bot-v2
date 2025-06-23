@@ -69,7 +69,7 @@ async def token_handler(client, message):
     join = await subscribe(client, message)
     if join == 1:
         return
-    chat_id = "Saverestrictedcontents01_bot"
+    chat_id = "-1002233338225"
     msg = await app.get_messages(chat_id, 441)
     user_id = message.chat.id
     if len(message.command) <= 1:
