@@ -91,7 +91,7 @@ async def single_link(_, message):
         return
 
     # Check freemium limits
-    if await chk_user(message, user_id) == 1 and FREEMIUM_LIMIT == 0 and user_id not in OWNER_ID and not await is_user_verified(user_id):
+    if await chk_user(message, user_id) == 1 and FREEMIUM_LIMIT == 10 and user_id not in OWNER_ID and not await is_user_verified(user_id):
         await message.reply("Freemium service is currently not available. Upgrade to premium for access.")
         return
 
@@ -185,7 +185,7 @@ async def batch_link(_, message):
         return
 
     freecheck = await chk_user(message, user_id)
-    if freecheck == 1 and FREEMIUM_LIMIT == 0 and user_id not in OWNER_ID and not await is_user_verified(user_id):
+    if freecheck == 1 and FREEMIUM_LIMIT == 10 and user_id not in OWNER_ID and not await is_user_verified(user_id):
         await message.reply("Freemium service is currently not available. Upgrade to premium for access.")
         return
 
@@ -193,7 +193,7 @@ async def batch_link(_, message):
 
     # Start link input
     for attempt in range(3):
-        start = await app.ask(message.chat.id, "Please send the start link.\n\n> Maximum tries 3")
+        start = await app.ask(message.chat.id, "Please send the start link.\n\n> Send me link")
         start_id = start.text.strip()
         s = start_id.split("/")[-1]
         if s.isdigit():
