@@ -1,22 +1,17 @@
 # ---------------------------------------------------
 # File Name: gcast.py
-# Description: A Pyrogram bot for downloading files from Telegram channels or groups 
-#              and uploading them back to Telegram.
-# Author: Gagan
-# GitHub: https://github.com/devgaganin/
-# Telegram: https://t.me/team_spy_pro
-# YouTube: https://youtube.com/@dev_gagan
-# Created: 2025-01-11
-# Last Modified: 2025-01-11
-# Version: 2.0.5
-# License: MIT License
+# Description: Broadcast & forward messages to users
+# Author: Gagan (Modified by ChatGPT)
 # ---------------------------------------------------
 
 import asyncio
+import traceback
 from pyrogram import filters
+from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
 from config import OWNER_ID
 from devgagan import app
 from devgagan.core.mongo.users_db import get_users
+
 
 async def send_msg(user_id, message):
     try:
@@ -24,10 +19,13 @@ async def send_msg(user_id, message):
         try:
             await x.pin()
         except Exception:
-            await x.pin(both_sides=True)
+            try:
+                await x.pin(both_sides=True)
+            except Exception:
+                pass
     except FloodWait as e:
-        await asyncio.sleep(e.x)
-        return send_msg(user_id, message)
+        await asyncio.sleep(e.value)
+        return await send_msg(user_id, message)
     except InputUserDeactivated:
         return 400, f"{user_id} : deactivated\n"
     except UserIsBlocked:
@@ -40,61 +38,63 @@ async def send_msg(user_id, message):
 
 @app.on_message(filters.command("gcast") & filters.user(OWNER_ID))
 async def broadcast(_, message):
-    if not message.reply_to_message:
-        await message.reply_text("ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ ɪᴛ.")
-        return    
-    exmsg = await message.reply_text("sᴛᴀʀᴛᴇᴅ ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ!")
-    all_users = (await get_users()) or {}
+    # Get text to send or reply message
+    to_send = message.reply_to_message or (
+        message.text.split(None, 1)[1] if len(message.text.split()) > 1 else None
+    )
+
+    if not to_send:
+        return await message.reply_text("❌ Reply to a message or use `/gcast your message`.")
+
+    exmsg = await message.reply_text("📢 Broadcast started...")
+    all_users = await get_users() or []
     done_users = 0
     failed_users = 0
-    
+
     for user in all_users:
         try:
-            await send_msg(user, message.reply_to_message)
+            if isinstance(to_send, str):
+                await app.send_message(chat_id=int(user), text=to_send)
+            else:
+                await send_msg(int(user), to_send)
             done_users += 1
             await asyncio.sleep(0.1)
         except Exception:
-            pass
             failed_users += 1
-    if failed_users == 0:
-        await exmsg.edit_text(
-            f"**sᴜᴄᴄᴇssғᴜʟʟʏ ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ✅**\n\n**sᴇɴᴛ ᴍᴇssᴀɢᴇ ᴛᴏ** `{done_users}` **ᴜsᴇʀs**",
-        )
-    else:
-        await exmsg.edit_text(
-            f"**sᴜᴄᴄᴇssғᴜʟʟʏ ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ✅**\n\n**sᴇɴᴛ ᴍᴇssᴀɢᴇ ᴛᴏ** `{done_users}` **ᴜsᴇʀs**\n\n**ɴᴏᴛᴇ:-** `ᴅᴜᴇ ᴛᴏ sᴏᴍᴇ ɪssᴜᴇ ᴄᴀɴ'ᴛ ᴀʙʟᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ` `{failed_users}` **ᴜsᴇʀs**",
-        )
 
-
-
+    await exmsg.edit_text(
+        f"✅ **Broadcast Finished**\n\n"
+        f"📤 Sent to: `{done_users}` users\n"
+        f"❌ Failed: `{failed_users}` users"
+    )
 
 
 @app.on_message(filters.command("acast") & filters.user(OWNER_ID))
 async def announced(_, message):
-    if message.reply_to_message:
-      to_send=message.reply_to_message.id
     if not message.reply_to_message:
-      return await message.reply_text("Reply To Some Post To Broadcast")
+        return await message.reply_text("❌ Reply to a message to forward it.")
+
+    to_send_id = message.reply_to_message.id
+    exmsg = await message.reply_text("📣 Forward broadcast started...")
+
     users = await get_users() or []
-    print(users)
-    failed_user = 0
-  
+    done_users = 0
+    failed_users = 0
+
     for user in users:
-      try:
-        await _.forward_messages(chat_id=int(user), from_chat_id=message.chat.id, message_ids=to_send)
-        await asyncio.sleep(1)
-      except Exception as e:
-        failed_user += 1
-          
-    if failed_users == 0:
-        await exmsg.edit_text(
-            f"**sᴜᴄᴄᴇssғᴜʟʟʏ ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ✅**\n\n**sᴇɴᴛ ᴍᴇssᴀɢᴇ ᴛᴏ** `{done_users}` **ᴜsᴇʀs**",
-        )
-    else:
-        await exmsg.edit_text(
-            f"**sᴜᴄᴄᴇssғᴜʟʟʏ ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ✅**\n\n**sᴇɴᴛ ᴍᴇssᴀɢᴇ ᴛᴏ** `{done_users}` **ᴜsᴇʀs**\n\n**ɴᴏᴛᴇ:-** `ᴅᴜᴇ ᴛᴏ sᴏᴍᴇ ɪssᴜᴇ ᴄᴀɴ'ᴛ ᴀʙʟᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ` `{failed_users}` **ᴜsᴇʀs**",
-        )
+        try:
+            await _.forward_messages(
+                chat_id=int(user),
+                from_chat_id=message.chat.id,
+                message_ids=to_send_id
+            )
+            done_users += 1
+            await asyncio.sleep(0.1)
+        except Exception:
+            failed_users += 1
 
-
-
-
+    await exmsg.edit_text(
+        f"✅ **Forward Broadcast Finished**\n\n"
+        f"📤 Forwarded to: `{done_users}` users\n"
+        f"❌ Failed: `{failed_users}` users"
+    )
