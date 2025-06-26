@@ -1,22 +1,32 @@
-# https://www.dl.dropboxusercontent.com/scl/fi/35w0i0hnsioq63x7eumdd/pyrogagan.zip?rlkey=mq4b56v0z7w7mgj3c0o3sqgo1&st=n7prfm1y&dl=0
-pyrofork
-psutil
-aiofiles
-pillow
-devgagantools
-tgcrypto
-pyromod
-opencv-python-headless
-requests
-motor
-pytz
-flask
-aiohttp
-telethon
-aiojobs
-werkzeug==2.2.2
-apscheduler 
-telethon-tgcrypto
-mutagen
-yt-dlp
-speedtest-cli
+# Core Telegram Libraries
+pyrofork==2.1.3
+telethon==1.34.0
+pyromod==3.1
+tgcrypto==1.2.5
+telethon-tgcrypto==1.2.2
+
+# Media Processing
+yt-dlp==2024.6.22
+opencv-python-headless==4.9.0.80
+Pillow==10.3.0
+mutagen==1.47.0
+
+# Async & Performance
+aiohttp==3.9.5
+aiofiles==23.2.1
+aiojobs==1.4.0
+psutil==5.9.8
+
+# Web & Server
+Flask==3.0.3
+Werkzeug==2.2.2
+APScheduler==3.10.4
+
+# Utilities
+requests==2.32.2
+motor==3.3.2
+pytz==2024.1
+speedtest-cli==2.1.3
+
+# Custom Package (Install from local source)
+# devgagantools (include in project directory)
