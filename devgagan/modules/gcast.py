@@ -1,48 +1,43 @@
+# ---------------------------------------------------
+# File Name: gcast.py
+# Description: Broadcast & forward messages to users
+# Author: Gagan (Updated by ChatGPT)
+# ---------------------------------------------------
+
 import asyncio
 import traceback
 from pyrogram import filters
-from pyrogram.enums import ParseMode
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
-
 from config import OWNER_ID
 from devgagan import app
 from devgagan.core.mongo.users_db import get_users
 
 
-# Optional: Predefined broadcast buttons
-BROADCAST_BUTTONS = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔥 Try Bot", url="https://t.me/Saverestrictedcontents01_bot")],
-    [InlineKeyboardButton("💎 Upgrade Premium", url="https://t.me/arsh_beniwal")]
-])
-
-
-async def send_msg(user_id, content, is_text=True):
+# Function to copy and pin message (used in gcast)
+async def send_msg(user_id, message):
     try:
-        if is_text:
-            await app.send_message(
-                chat_id=user_id,
-                text=content,
-                reply_markup=BROADCAST_BUTTONS,
-                parse_mode=ParseMode.MARKDOWN
-            )
-        else:
-            x = await content.copy(chat_id=user_id, reply_markup=BROADCAST_BUTTONS)
+        x = await message.copy(chat_id=user_id)
+        try:
+            await x.pin()
+        except Exception:
             try:
-                await x.pin()
+                await x.pin(both_sides=True)
             except Exception:
                 pass
     except FloodWait as e:
         await asyncio.sleep(e.value)
-        return await send_msg(user_id, content, is_text)
-    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        return False
+        return await send_msg(user_id, message)
+    except InputUserDeactivated:
+        return 400, f"{user_id} : deactivated\n"
+    except UserIsBlocked:
+        return 400, f"{user_id} : blocked the bot\n"
+    except PeerIdInvalid:
+        return 400, f"{user_id} : user id invalid\n"
     except Exception:
-        print(traceback.format_exc())
-        return False
-    return True
+        return 500, f"{user_id} : {traceback.format_exc()}\n"
 
 
+# /gcast command: broadcast via copy (reply or text)
 @app.on_message(filters.command("gcast") & filters.user(OWNER_ID))
 async def broadcast(_, message):
     to_send = message.reply_to_message or (
@@ -52,31 +47,30 @@ async def broadcast(_, message):
     if not to_send:
         return await message.reply_text("❌ Reply to a message or add text after /gcast.")
 
-    exmsg = await message.reply_text("📤 Starting broadcast with buttons...")
-
+    exmsg = await message.reply_text("📤 Starting broadcast...")
     all_users = await get_users() or []
     done_users = 0
     failed_users = 0
 
     for user in all_users:
         try:
-            success = await send_msg(int(user), to_send, isinstance(to_send, str))
-            if success:
-                done_users += 1
+            if isinstance(to_send, str):
+                await app.send_message(chat_id=int(user), text=to_send)
             else:
-                failed_users += 1
+                await send_msg(int(user), to_send)
+            done_users += 1
             await asyncio.sleep(0.1)
         except Exception:
             failed_users += 1
 
     await exmsg.edit_text(
-        f"✅ **Broadcast Completed**\n\n"
-        f"👥 Total Users: `{len(all_users)}`\n"
+        f"✅ **Broadcast Finished**\n\n"
         f"📤 Sent to: `{done_users}` users\n"
         f"❌ Failed: `{failed_users}` users"
     )
 
 
+# /acast command: forward or text broadcast
 @app.on_message(filters.command("acast") & filters.user(OWNER_ID))
 async def announced(_, message):
     users = await get_users() or []
@@ -101,30 +95,24 @@ async def announced(_, message):
             except Exception:
                 failed_users += 1
 
-    # Or send plain text
+    # Otherwise, broadcast as plain text
     elif len(message.text.split()) > 1:
         broadcast_text = message.text.split(None, 1)[1]
-        exmsg = await message.reply_text("📤 Starting text forward broadcast...")
+        exmsg = await message.reply_text("📤 Starting text broadcast...")
 
         for user in users:
             try:
-                await app.send_message(
-                    chat_id=int(user),
-                    text=broadcast_text,
-                    reply_markup=BROADCAST_BUTTONS,
-                    parse_mode=ParseMode.MARKDOWN
-                )
+                await app.send_message(chat_id=int(user), text=broadcast_text)
                 done_users += 1
                 await asyncio.sleep(0.1)
             except Exception:
                 failed_users += 1
 
     else:
-        return await message.reply_text("❌ Reply to a message or type a message after /acast.")
+        return await message.reply_text("❌ Reply to a message or add text after /acast.")
 
     await exmsg.edit_text(
-        f"✅ **Acast Broadcast Completed**\n\n"
-        f"👥 Total Users: `{len(users)}`\n"
+        f"✅ **Broadcast Finished**\n\n"
         f"📤 Sent to: `{done_users}` users\n"
         f"❌ Failed: `{failed_users}` users"
     )
